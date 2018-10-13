@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-echo VMware Get OS X Tools 2.1.1
-echo ===============================
-echo Copyright: Dave Parsons 2015-16
+echo "Get macOS VMware Tools 3.0.2"
+echo "==============================="
+echo "(c) Dave Parsons 2015-18"
 
 # Ensure we only use unmodified commands
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
@@ -15,7 +15,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo Getting VMware Tools...
-python2 gettools.py
+python gettools.py
 cp ./tools/darwin*.* /usr/lib/vmware/isoimages/
 
 echo Finished!

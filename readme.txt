@@ -1,4 +1,4 @@
-macOS Unlocker for VMware Workstation V3.0
+macOS Unlocker V3.0 for VMware Workstation
 ==========================================
 
 +-----------------------------------------------------------------------------+
@@ -84,7 +84,7 @@ by running chmod +x against the 2 files.
 
 lnx-install.sh   - patches VMware
 lnx-uninstall.sh - restores VMware
-lnx-update-tools.cmd - retrieves latest macOS guest tools
+lnx-update-tools.sh - retrieves latest macOS guest tools
    
 6. Thanks
 ---------
@@ -100,6 +100,9 @@ modified the unlocker code to run on Python 3 in the ESXi 6.5 environment.
 History
 -------
 27/09/18 3.0.0 - First release
+02/10/18 3.0.1 - Fixed gettools.py to work with Python 3 and correctly download darwinPre15.iso
+10/10/18 3.0.2 - Fixed false positives from anti-virus software with Windows executables
+               - Allow Python 2 and 3 to run the Python code from Bash scripts
 
 
 (c) 2011-2018 Dave Parsons
