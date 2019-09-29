@@ -23,21 +23,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-from __future__ import print_function
+from __future__ import division, print_function
+
 import os
-import sys
 import shutil
+import sys
 import tarfile
+import time
 import zipfile
+from contextlib import closing
 
 try:
     # For Python 3.0 and later
     # noinspection PyCompatibility
-    from urllib.request import urlopen
+    from urllib.request import urlopen, urlretrieve
     # noinspection PyCompatibility
     from html.parser import HTMLParser
-    # noinspection PyCompatibility
-    from urllib.request import urlretrieve
 except ImportError:
     # Fall back to Python 2
     # noinspection PyCompatibility
@@ -72,6 +73,49 @@ def convertpath(path):
     return path.replace(os.path.sep, '/')
 
 
+def download(url, filename, reporthook=None):
+    with closing(urlopen(url)) as fp:
+        headers = fp.info()
+        with open(filename, 'wb') as tfp:
+            bs = 1024 * 8
+            size = -1
+            read = 0
+            blocknum = 0
+            if "content-length" in headers:
+                size = int(headers["Content-Length"])
+
+            if reporthook:
+                reporthook(blocknum, bs, size)
+
+            while True:
+                block = fp.read(bs)
+                if not block:
+                    break
+                read += len(block)
+                tfp.write(block)
+                blocknum += 1
+                if reporthook:
+                    reporthook(blocknum, bs, size)
+
+
+def report_hook(blocks_read, block_size, total_byte):
+    global start_time
+    if blocks_read == 0:
+        start_time = time.time()
+        return
+    duration = time.time() - start_time
+    progress_size = int(blocks_read * block_size)
+    speed = progress_size / (1024 * 1024 * duration) if duration > 0 else 0
+    percent = min(int(blocks_read * block_size * 100 / total_byte), 100)
+    time_remaining = (total_byte - progress_size) / (1024 * 1024 * speed) if speed > 0 else 0
+    time_remaining = time_remaining if time_remaining > 0 else 0
+    progress_bar = '=' * int(percent / 5) + ('>' if percent < 100 else '')
+    progress_str = '{:>4}% [{:20}] {:,.2f} MB    {:,.2f} MB/s    ETA {:.0f} seconds'.format(
+        percent, progress_bar, progress_size / (1024 * 1024), speed, time_remaining)
+    sys.stdout.write('{:80}\r'.format(progress_str))
+    sys.stdout.flush()
+
+
 def main():
     # Check minimal Python version is 2.7
     if sys.version_info < (2, 7):
@@ -100,13 +144,52 @@ def main():
     response = urlopen(url)
     html = response.read()
     parser.feed(str(html))
-    urlpost15 = url + parser.HTMLDATA[-1] + '/packages/com.vmware.fusion.tools.darwin.zip.tar'
-    urlpre15 = url + parser.HTMLDATA[-1] + '/packages/com.vmware.fusion.tools.darwinPre15.zip.tar'
+    last_version = parser.HTMLDATA[-1]
     parser.clean()
+    urlpost15 = url + last_version + '/packages/com.vmware.fusion.tools.darwin.zip.tar'
+    urlpre15 = url + last_version + '/packages/com.vmware.fusion.tools.darwinPre15.zip.tar'
 
     # Download the darwin.iso tgz file
     print('Retrieving Darwin tools from: ' + urlpost15)
-    urlretrieve(urlpost15, convertpath(dest + '/tools/com.vmware.fusion.tools.darwin.zip.tar'))
+    try:
+        # Try to get tools from packages folder
+        download(urlpost15, convertpath(dest + '/tools/com.vmware.fusion.tools.darwin.zip.tar'), report_hook)
+    except:
+        url_fusion_app = url + last_version + '/core/com.vmware.fusion.zip.tar'
+
+        # Get the fusion app file
+        print('Tools aren\'t found. Please wait while downloading from another source.')
+        try:
+            print('Retrieving Fusion App from: ' + url_fusion_app)
+            download(url_fusion_app, convertpath(dest + '/tools/com.vmware.fusion.zip.tar'), report_hook)
+        except:
+            print('Couldn\'t find tools')
+            return
+
+        print()
+        tar = tarfile.open(convertpath(dest + '/tools/com.vmware.fusion.zip.tar'), 'r')
+        tar.extract('com.vmware.fusion.zip', path=convertpath(dest + '/tools/'))
+        tar.close()
+
+        # Extract the iso files from zip
+        cdszip = zipfile.ZipFile(convertpath(dest + '/tools/com.vmware.fusion.zip'), 'r')
+        cdszip.extract('payload/VMware Fusion.app/Contents/Library/isoimages/darwin.iso',
+                       path=convertpath(dest + '/tools/'))
+        cdszip.extract('payload/VMware Fusion.app/Contents/Library/isoimages/darwinPre15.iso',
+                       path=convertpath(dest + '/tools/'))
+        cdszip.close()
+
+        # Move the iso and sig files to tools folder
+        shutil.move(convertpath(dest + '/tools/payload/VMware Fusion.app/Contents/Library/isoimages/darwin.iso'),
+                    convertpath(dest + '/tools/darwin.iso'))
+        shutil.move(convertpath(dest + '/tools/payload/VMware Fusion.app/Contents/Library/isoimages/darwinPre15.iso'),
+                    convertpath(dest + '/tools/darwinPre15.iso'))
+
+        # Cleanup working files and folders
+        shutil.rmtree(convertpath(dest + '/tools/payload'), True)
+        os.remove(convertpath(dest + '/tools/com.vmware.fusion.zip.tar'))
+        os.remove(convertpath(dest + '/tools/com.vmware.fusion.zip'))
+        return
 
     # Extract the tar to zip
     tar = tarfile.open(convertpath(dest + '/tools/com.vmware.fusion.tools.darwin.zip.tar'), 'r')

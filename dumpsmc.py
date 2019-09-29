@@ -42,6 +42,7 @@ Offset  Length  Struct Type Description
 """
 
 from __future__ import print_function
+
 import struct
 import sys
 

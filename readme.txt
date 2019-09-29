@@ -103,6 +103,7 @@ History
 02/10/18 3.0.1 - Fixed gettools.py to work with Python 3 and correctly download darwinPre15.iso
 10/10/18 3.0.2 - Fixed false positives from anti-virus software with Windows executables
                - Allow Python 2 and 3 to run the Python code from Bash scripts
+30/09/19 3.0.3 - Support VMware 15.5
 
 
-(c) 2011-2018 Dave Parsons
+(c) 2011-2019 Dave Parsons
