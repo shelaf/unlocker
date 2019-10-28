@@ -51,7 +51,6 @@ except ImportError:
 
 # Parse the Fusion directory page
 class CDSParser(HTMLParser):
-
     def __init__(self):
         HTMLParser.__init__(self)
         self.reset()
@@ -167,11 +166,14 @@ def main():
             return
 
         print()
+
+        print('Extracting com.vmware.fusion.zip.tar...')
         tar = tarfile.open(convertpath(dest + '/tools/com.vmware.fusion.zip.tar'), 'r')
         tar.extract('com.vmware.fusion.zip', path=convertpath(dest + '/tools/'))
         tar.close()
 
         # Extract the iso files from zip
+        print('Extracting files from com.vmware.fusion.zip...')
         cdszip = zipfile.ZipFile(convertpath(dest + '/tools/com.vmware.fusion.zip'), 'r')
         cdszip.extract('payload/VMware Fusion.app/Contents/Library/isoimages/darwin.iso',
                        path=convertpath(dest + '/tools/'))
@@ -189,7 +191,11 @@ def main():
         shutil.rmtree(convertpath(dest + '/tools/payload'), True)
         os.remove(convertpath(dest + '/tools/com.vmware.fusion.zip.tar'))
         os.remove(convertpath(dest + '/tools/com.vmware.fusion.zip'))
+
+        print('Tools retrieved successfully')
         return
+
+    # Tools have been found, go with the normal way
 
     # Extract the tar to zip
     tar = tarfile.open(convertpath(dest + '/tools/com.vmware.fusion.tools.darwin.zip.tar'), 'r')
