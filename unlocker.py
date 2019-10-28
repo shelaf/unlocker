@@ -54,8 +54,7 @@ if sys.version_info < (2, 7):
     sys.exit(1)
 
 # Setup imports depending on whether IronPython or CPython
-if sys.platform == 'win32' \
-        or sys.platform == 'cli':
+if sys.platform in ('cli', 'win32'):
     # noinspection PyUnresolvedReferences
     if sys.version_info > (3, 0):
         from winreg import ConnectRegistry, HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx
